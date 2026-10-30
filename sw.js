@@ -1,6 +1,6 @@
 // Service worker : garde l'appli en cache pour un démarrage rapide.
 // Les données Firestore ne passent pas par ici (Firebase gère son propre cache).
-const CACHE = "budget-foyer-v1";
+const CACHE = "budget-foyer-v2";
 const SHELL = ["./", "index.html", "config.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 
 self.addEventListener("install", e => {

@@ -18,7 +18,7 @@
 :root{
   --bg:#f3f5f4; --surface:#ffffff; --line:#dfe5e2; --fg:#16231f; --muted:#5f6f69;
   --accent:#1f5f4f; --accent-fg:#ffffff;
-  --fixe:#b4690e; --fixe-soft:#f7ead8; --danger:#b3261e; --danger-soft:#fbe4e2;
+  --fixe:#b4690e; --fixe-soft:#f7ead8; --danger:#b3261e; --danger-soft:#fbe4e2; --pos:#2f7d3c; --pos-soft:#e2f1e4;
   --display:"Sora",ui-sans-serif,system-ui,sans-serif;
   --body:"Figtree",ui-sans-serif,system-ui,sans-serif;
   --c1:#1f5f4f;--c2:#b4690e;--c3:#3d5fa8;--c4:#8a3f7a;--c5:#4f7d2b;--c6:#b3261e;--c7:#2b7f8f;--c8:#7a6a3a;--c9:#6b6f78;
@@ -27,7 +27,7 @@
 @media (prefers-color-scheme:dark){:root{
   --bg:#0f1513; --surface:#18201d; --line:#2a3531; --fg:#e7eeeb; --muted:#9aaba4;
   --accent:#5fb89f; --accent-fg:#0b1512;
-  --fixe:#e6a456; --fixe-soft:#3a2b17; --danger:#f08a80; --danger-soft:#3d1f1c;
+  --fixe:#e6a456; --fixe-soft:#3a2b17; --danger:#f08a80; --danger-soft:#3d1f1c; --pos:#7fcf8f; --pos-soft:#1c3522;
   --c1:#5fb89f;--c2:#e6a456;--c3:#86a5e8;--c4:#d48cc4;--c5:#9cc76f;--c6:#f08a80;--c7:#6cc3d2;--c8:#cbb779;--c9:#a3a8b2;
   color-scheme:dark}}
 *{box-sizing:border-box}
@@ -42,6 +42,10 @@ header h1{font-family:var(--display);font-size:17px;font-weight:600;margin:0;tex
 button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .total{display:flex;flex-direction:column;gap:6px;padding-top:4px}
 .lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.big.pos{color:var(--pos)}.big.neg{color:var(--danger)}
+.row .v.plus{color:var(--pos)}
+.badge.rev{color:var(--pos);background:var(--pos-soft)}
+.seg button[data-t="revenu"][aria-pressed="true"]{color:var(--pos)}
 .big{font-family:var(--display);font-size:40px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}
 .split{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
 .split b{color:var(--fg);font-weight:600}
@@ -111,31 +115,36 @@ h2 small{font-family:var(--body);font-weight:500;color:var(--muted);font-size:14
   </header>
 
   <section class="total" aria-live="polite">
-    <span class="lbl">Dépensé ce mois</span>
+    <span class="lbl" id="bigLbl">Dépensé ce mois</span>
     <span class="big" id="total">0 €</span>
     <div class="split">
-      <span><span class="dot" style="background:var(--fixe)"></span>Chaque mois <b id="tFixe">0 €</b></span>
-      <span><span class="dot" style="background:var(--accent)"></span>Ponctuel <b id="tVar">0 €</b></span>
+      <span><span class="dot" style="background:var(--pos)"></span>Revenus <b id="tRev">0 €</b></span>
+      <span><span class="dot" style="background:var(--danger)"></span>Dépenses <b id="tDep">0 €</b></span>
+      <span>dont fixes <b id="tFixe">0 €</b></span>
     </div>
   </section>
 
   <form class="card" id="form" autocomplete="off">
+    <div class="seg" id="typeSeg" role="group" aria-label="Type">
+      <button type="button" data-t="depense" aria-pressed="true">Dépense</button>
+      <button type="button" data-t="revenu" aria-pressed="false">Revenu</button>
+    </div>
     <label class="amount" for="amt">
       <input id="amt" inputmode="decimal" placeholder="0,00" aria-label="Montant">
       <span>€</span>
     </label>
     <div class="chips" id="cats" role="group" aria-label="Catégorie"></div>
-    <div class="seg" role="group" aria-label="Fréquence">
+    <div class="seg" id="freqSeg" role="group" aria-label="Fréquence">
       <button type="button" data-v="var" aria-pressed="true">Une fois</button>
       <button type="button" data-v="fixe" aria-pressed="false">Chaque mois</button>
     </div>
-    <input class="field" id="name" placeholder="Nom (ex. Crédit maison, Netflix) — facultatif" hidden>
+    <input class="field" id="name" placeholder="Nom — facultatif" hidden>
     <button class="add" id="addBtn" type="submit" disabled>Ajouter</button>
     <p class="msg" id="msg"></p>
   </form>
 
   <section class="card" id="repSec">
-    <h2>Par catégorie</h2>
+    <h2>Dépenses par catégorie</h2>
     <div class="bars" id="bars"></div>
   </section>
 
@@ -187,19 +196,27 @@ auth.onAuthStateChanged(u=>{
 const CATS=[
   ["Logement","--c1"],["Crédit","--c3"],["Abonnements","--c4"],["Courses","--c5"],
   ["Voiture","--c2"],["Enfants","--c7"],["Santé","--c6"],["Loisirs","--c8"],["Divers","--c9"]];
-const COLOR=Object.fromEntries(CATS.map(([n,c])=>[n,`var(${c})`]));
+const CATS_REV=[["Salaire","--c5"],["Allocations","--c3"],["Prime","--c7"],["Remboursement","--c4"],["Autre","--c9"]];
+const COLOR=Object.fromEntries([...CATS,...CATS_REV].map(([n,c])=>[n,`var(${c})`]));
+const isRev=x=>x.type==="revenu"; // anciennes lignes sans type = dépenses
 const fmt=c=>(c/100).toLocaleString("fr-FR",{minimumFractionDigits:c%100?2:0,maximumFractionDigits:2})+" €";
 const ym=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
 const shift=(m,n)=>{const[y,mo]=m.split("-").map(Number);return ym(new Date(y,mo-1+n,1))};
 const localDate=d=>ym(d)+"-"+String(d.getDate()).padStart(2,"0");
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let view=ym(new Date()), cat=null, freq="var", fixes=[], deps=[], confirmId=null;
+let view=ym(new Date()), cat=null, freq="var", type="depense", fixes=[], deps=[], confirmId=null;
 
-$("cats").innerHTML=CATS.map(([n])=>`<button type="button" class="chip" data-c="${n}" aria-pressed="false"><span class="dot" style="background:${COLOR[n]}"></span>${n}</button>`).join("");
+function drawCats(){
+  $("cats").innerHTML=(type==="revenu"?CATS_REV:CATS).map(([n])=>`<button type="button" class="chip" data-c="${n}" aria-pressed="false"><span class="dot" style="background:${COLOR[n]}"></span>${n}</button>`).join("");
+  $("name").placeholder=type==="revenu"?"Nom (ex. Salaire Hakim, CAF) — facultatif":"Nom (ex. Crédit maison, Netflix) — facultatif";
+}
+drawCats();
+$("typeSeg").onclick=e=>{const b=e.target.closest("button");if(!b||b.dataset.t===type)return;type=b.dataset.t;cat=null;
+  $("typeSeg").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));drawCats();check()};
 $("cats").onclick=e=>{const b=e.target.closest(".chip");if(!b)return;cat=b.dataset.c;
   document.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===b));check()};
-document.querySelector(".seg").onclick=e=>{const b=e.target.closest("button");if(!b)return;freq=b.dataset.v;
-  document.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed",x===b));$("name").hidden=freq!=="fixe"};
+$("freqSeg").onclick=e=>{const b=e.target.closest("button");if(!b)return;freq=b.dataset.v;
+  $("freqSeg").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));$("name").hidden=freq!=="fixe"};
 const cents=()=>{const v=parseFloat($("amt").value.replace(/\s/g,"").replace(",","."));return isFinite(v)&&v>0?Math.round(v*100):0};
 const check=()=>{$("addBtn").disabled=!(cents()&&cat)};
 $("amt").oninput=check;
@@ -213,22 +230,26 @@ function render(){
   const [y,m]=view.split("-").map(Number);
   $("month").textContent=new Date(y,m-1,1).toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
   const F=activeFixes(), D=monthDeps();
-  const tf=F.reduce((s,x)=>s+x.montant,0), tv=D.reduce((s,x)=>s+x.montant,0);
-  $("total").textContent=fmt(tf+tv); $("tFixe").textContent=fmt(tf); $("tVar").textContent=fmt(tv);
+  const sum=a=>a.reduce((s,x)=>s+x.montant,0);
+  const rev=sum([...F,...D].filter(isRev)), dep=sum([...F,...D].filter(x=>!isRev(x))), depFixe=sum(F.filter(x=>!isRev(x)));
+  $("tRev").textContent=fmt(rev); $("tDep").textContent=fmt(dep); $("tFixe").textContent=fmt(depFixe);
+  if(rev){ const r=rev-dep;
+    $("bigLbl").textContent="Reste ce mois"; $("total").textContent=(r<0?"−":"")+fmt(Math.abs(r)); $("total").className="big "+(r<0?"neg":"pos");
+  }else{ $("bigLbl").textContent="Dépensé ce mois"; $("total").textContent=fmt(dep); $("total").className="big"; }
 
-  const by={};[...F,...D].forEach(x=>by[x.categorie]=(by[x.categorie]||0)+x.montant);
+  const by={};[...F,...D].filter(x=>!isRev(x)).forEach(x=>by[x.categorie]=(by[x.categorie]||0)+x.montant);
   const rows=Object.entries(by).sort((a,b)=>b[1]-a[1]), max=rows[0]?.[1]||1;
   $("repSec").hidden=!rows.length;
   $("bars").innerHTML=rows.map(([c,v])=>`<div class="bar"><span><span class="dot" style="background:${COLOR[c]||"var(--c9)"}"></span>${esc(c)}</span><span class="v">${fmt(v)}</span><div class="track"><div class="fill" style="width:${Math.max(2,v/max*100)}%;background:${COLOR[c]||"var(--c9)"}"></div></div></div>`).join("");
 
-  const items=[...F.map(x=>({...x,k:"f"})),...D.map(x=>({...x,k:"d"}))];
+  const items=[...F.map(x=>({...x,k:"f"})),...D.map(x=>({...x,k:"d"}))].sort((a,b)=>isRev(b)-isRev(a));
   $("count").textContent=items.length?items.length+" ligne"+(items.length>1?"s":""):"";
   $("list").innerHTML=items.length?items.map(x=>{
     const sub=x.k==="f"?"":(x.date?new Date(x.date+"T12:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short"}):"");
     const key=x.k+":"+x.id, conf=confirmId===key;
     return `<div class="row"><span class="dot" style="background:${COLOR[x.categorie]||"var(--c9)"};margin:0"></span>
-      <div class="t"><div>${esc(x.nom||x.categorie)}${x.k==="f"?'<span class="badge">chaque mois</span>':""}</div>${x.nom||sub?`<small>${x.nom?esc(x.categorie):""}${x.nom&&sub?" · ":""}${sub}</small>`:""}</div>
-      <span class="v">${fmt(x.montant)}</span>
+      <div class="t"><div>${esc(x.nom||x.categorie)}${x.k==="f"?`<span class="badge${isRev(x)?" rev":""}">chaque mois</span>`:""}</div>${x.nom||sub?`<small>${x.nom?esc(x.categorie):""}${x.nom&&sub?" · ":""}${sub}</small>`:""}</div>
+      <span class="v${isRev(x)?" plus":""}">${isRev(x)?"+":""}${fmt(x.montant)}</span>
       <button class="del${conf?" confirm":""}" data-k="${key}" aria-label="Supprimer">${conf?(x.k==="f"?"Arrêter ?":"Supprimer ?"):"✕"}</button></div>`}).join("")
     :`<p class="empty">Rien pour ce mois. Saisis un montant et une catégorie ci-dessus.</p>`;
 }
@@ -253,12 +274,12 @@ $("form").onsubmit=async e=>{
   try{
     if(freq==="fixe"){
       const nom=$("name").value.trim();
-      fs.collection("fixes").add({montant:c,categorie:cat,nom:nom||null,debut:view,fin:null});
-      say(`${fmt(c)} ajouté chaque mois à partir de ce mois.`);
+      fs.collection("fixes").add({type,montant:c,categorie:cat,nom:nom||null,debut:view,fin:null});
+      say(`${type==="revenu"?"Revenu de ":""}${fmt(c)} ajouté chaque mois à partir de ce mois.`);
     }else{
       const now=new Date(), date=view===ym(now)?localDate(now):view+"-01";
-      fs.collection("depenses").add({montant:c,categorie:cat,mois:view,date});
-      say(`${fmt(c)} ajouté en ${cat}.`);
+      fs.collection("depenses").add({type,montant:c,categorie:cat,mois:view,date});
+      say(`${type==="revenu"?"+":""}${fmt(c)} ajouté en ${cat}.`);
     }
     $("amt").value="";$("name").value="";
   }catch(err){say("Enregistrement impossible : "+(err.message||err.code),true)}
