@@ -56,6 +56,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .amount input{flex:1;min-width:0;border:0;background:transparent;color:var(--fg);font-family:var(--display);font-size:32px;font-weight:600;font-variant-numeric:tabular-nums;padding:0;outline:none}
 .amount span{font-family:var(--display);font-size:24px;color:var(--muted)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
+.sugg{gap:6px;margin-top:-6px}
+.sugg .chip{padding:5px 11px;font-size:13px;color:var(--muted)}
 .chip{border:1px solid var(--line);background:transparent;color:var(--fg);border-radius:999px;padding:8px 12px;font:500 14px var(--body);cursor:pointer;display:flex;align-items:center;gap:6px}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .chip[aria-pressed="true"] .dot{background:var(--accent-fg)!important}
@@ -134,11 +136,12 @@ h2 small{font-family:var(--body);font-weight:500;color:var(--muted);font-size:14
       <span>€</span>
     </label>
     <div class="chips" id="cats" role="group" aria-label="Catégorie"></div>
+    <input class="field" id="name" placeholder="Détail — facultatif" autocapitalize="words" autocorrect="off" enterkeyhint="done">
+    <div class="chips sugg" id="sugg" aria-label="Détails déjà utilisés"></div>
     <div class="seg" id="freqSeg" role="group" aria-label="Fréquence">
       <button type="button" data-v="var" aria-pressed="true">Une fois</button>
       <button type="button" data-v="fixe" aria-pressed="false">Chaque mois</button>
     </div>
-    <input class="field" id="name" placeholder="Nom — facultatif" hidden>
     <button class="add" id="addBtn" type="submit" disabled>Ajouter</button>
     <p class="msg" id="msg"></p>
   </form>
@@ -208,15 +211,30 @@ let view=ym(new Date()), cat=null, freq="var", type="depense", fixes=[], deps=[]
 
 function drawCats(){
   $("cats").innerHTML=(type==="revenu"?CATS_REV:CATS).map(([n])=>`<button type="button" class="chip" data-c="${n}" aria-pressed="false"><span class="dot" style="background:${COLOR[n]}"></span>${n}</button>`).join("");
-  $("name").placeholder=type==="revenu"?"Nom (ex. Salaire Hakim, CAF) — facultatif":"Nom (ex. Crédit maison, Netflix) — facultatif";
+  $("name").placeholder=type==="revenu"?"Détail (ex. Salaire Hakim, CAF) — facultatif":"Détail (ex. Lidl, Quick, Netflix) — facultatif";
+  drawSugg();
 }
+// Raccourcis : les détails déjà saisis, les plus utilisés d'abord (filtrés par catégorie choisie)
+function drawSugg(){
+  const n={};
+  [...deps,...fixes].forEach(x=>{ if(!x.nom||isRev(x)!==(type==="revenu")) return; if(cat&&x.categorie!==cat) return;
+    const k=x.nom.trim(); n[k]=(n[k]||0)+1; });
+  const top=Object.entries(n).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k])=>k);
+  $("sugg").hidden=!top.length;
+  $("sugg").innerHTML=top.map(k=>`<button type="button" class="chip" data-n="${esc(k)}">${esc(k)}</button>`).join("");
+}
+$("sugg").onclick=e=>{const b=e.target.closest(".chip");if(!b)return;$("name").value=b.dataset.n;
+  if(!cat){ // retrouve la catégorie habituelle de ce détail
+    const prev=[...deps,...fixes].find(x=>x.nom===b.dataset.n);
+    const c=prev&&$("cats").querySelector(`[data-c="${prev.categorie}"]`); if(c) c.click();
+  }};
 drawCats();
 $("typeSeg").onclick=e=>{const b=e.target.closest("button");if(!b||b.dataset.t===type)return;type=b.dataset.t;cat=null;
   $("typeSeg").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));drawCats();check()};
 $("cats").onclick=e=>{const b=e.target.closest(".chip");if(!b)return;cat=b.dataset.c;
-  document.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===b));check()};
+  $("cats").querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===b));drawSugg();check()};
 $("freqSeg").onclick=e=>{const b=e.target.closest("button");if(!b)return;freq=b.dataset.v;
-  $("freqSeg").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));$("name").hidden=freq!=="fixe"};
+  $("freqSeg").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b))};
 const cents=()=>{const v=parseFloat($("amt").value.replace(/\s/g,"").replace(",","."));return isFinite(v)&&v>0?Math.round(v*100):0};
 const check=()=>{$("addBtn").disabled=!(cents()&&cat)};
 $("amt").oninput=check;
@@ -272,14 +290,14 @@ $("form").onsubmit=async e=>{
   e.preventDefault();const c=cents();if(!c||!cat)return;
   $("addBtn").disabled=true;
   try{
+    const nom=$("name").value.trim();
     if(freq==="fixe"){
-      const nom=$("name").value.trim();
       fs.collection("fixes").add({type,montant:c,categorie:cat,nom:nom||null,debut:view,fin:null});
       say(`${type==="revenu"?"Revenu de ":""}${fmt(c)} ajouté chaque mois à partir de ce mois.`);
     }else{
       const now=new Date(), date=view===ym(now)?localDate(now):view+"-01";
-      fs.collection("depenses").add({type,montant:c,categorie:cat,mois:view,date});
-      say(`${type==="revenu"?"+":""}${fmt(c)} ajouté en ${cat}.`);
+      fs.collection("depenses").add({type,montant:c,categorie:cat,nom:nom||null,mois:view,date});
+      say(`${type==="revenu"?"+":""}${fmt(c)} ajouté en ${cat}${nom?" ("+nom+")":""}.`);
     }
     $("amt").value="";$("name").value="";
   }catch(err){say("Enregistrement impossible : "+(err.message||err.code),true)}
@@ -295,8 +313,8 @@ function start(){
   const fail=err=>{$("status").textContent=err.code==="permission-denied"
     ?"Accès refusé : cette adresse e-mail n'est pas dans les règles Firestore (étape 3 du guide)."
     :"Données indisponibles : "+(err.message||err.code)};
-  unsub.push(fs.collection("fixes").onSnapshot(s=>{fixes=map(s);render();done()},fail));
-  unsub.push(fs.collection("depenses").onSnapshot(s=>{deps=map(s);render();done()},fail));
+  unsub.push(fs.collection("fixes").onSnapshot(s=>{fixes=map(s);render();drawSugg();done()},fail));
+  unsub.push(fs.collection("depenses").onSnapshot(s=>{deps=map(s);render();drawSugg();done()},fail));
 }
 </script>
 </body>
