@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Budget Foyer</title>
+<meta name="theme-color" content="#1f5f4f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Budget">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#f3f5f4; --surface:#ffffff; --line:#dfe5e2; --fg:#16231f; --muted:#5f6f69;
+  --accent:#1f5f4f; --accent-fg:#ffffff;
+  --fixe:#b4690e; --fixe-soft:#f7ead8; --danger:#b3261e; --danger-soft:#fbe4e2;
+  --display:"Sora",ui-sans-serif,system-ui,sans-serif;
+  --body:"Figtree",ui-sans-serif,system-ui,sans-serif;
+  --c1:#1f5f4f;--c2:#b4690e;--c3:#3d5fa8;--c4:#8a3f7a;--c5:#4f7d2b;--c6:#b3261e;--c7:#2b7f8f;--c8:#7a6a3a;--c9:#6b6f78;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0f1513; --surface:#18201d; --line:#2a3531; --fg:#e7eeeb; --muted:#9aaba4;
+  --accent:#5fb89f; --accent-fg:#0b1512;
+  --fixe:#e6a456; --fixe-soft:#3a2b17; --danger:#f08a80; --danger-soft:#3d1f1c;
+  --c1:#5fb89f;--c2:#e6a456;--c3:#86a5e8;--c4:#d48cc4;--c5:#9cc76f;--c6:#f08a80;--c7:#6cc3d2;--c8:#cbb779;--c9:#a3a8b2;
+  color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:520px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:env(safe-area-inset-top,0px) calc(40px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;justify-content:space-between;padding-block:12px;border-bottom:1px solid var(--line)}
+header h1{font-family:var(--display);font-size:17px;font-weight:600;margin:0;text-transform:capitalize;text-align:center;flex:1}
+.nav{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:18px;cursor:pointer;display:grid;place-items:center}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.total{display:flex;flex-direction:column;gap:6px;padding-top:4px}
+.lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.big{font-family:var(--display);font-size:40px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}
+.split{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.split b{color:var(--fg);font-weight:600}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.amount{display:flex;align-items:baseline;gap:6px;border-bottom:2px solid var(--line);padding-bottom:6px}
+.amount:focus-within{border-color:var(--accent)}
+.amount input{flex:1;min-width:0;border:0;background:transparent;color:var(--fg);font-family:var(--display);font-size:32px;font-weight:600;font-variant-numeric:tabular-nums;padding:0;outline:none}
+.amount span{font-family:var(--display);font-size:24px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:transparent;color:var(--fg);border-radius:999px;padding:8px 12px;font:500 14px var(--body);cursor:pointer;display:flex;align-items:center;gap:6px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.chip[aria-pressed="true"] .dot{background:var(--accent-fg)!important}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border-radius:12px;padding:4px;gap:4px}
+.seg button{border:0;border-radius:9px;padding:10px;background:transparent;color:var(--muted);font:600 14px var(--body);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+.seg button[data-v="fixe"][aria-pressed="true"]{color:var(--fixe)}
+.field{border:1px solid var(--line);border-radius:10px;padding:12px;background:transparent;color:var(--fg);font:16px var(--body);width:100%}
+.add{border:0;border-radius:12px;padding:14px;background:var(--accent);color:var(--accent-fg);font:600 16px var(--body);cursor:pointer}
+.add:disabled{opacity:.45;cursor:default}
+.msg{font-size:13px;color:var(--muted);min-height:18px;margin:0}
+.msg.err{color:var(--danger)}
+h2{font-family:var(--display);font-size:15px;font-weight:600;margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+h2 small{font-family:var(--body);font-weight:500;color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:14px}
+.bar .track{grid-column:1 / -1;height:8px;border-radius:4px;background:var(--bg);overflow:hidden}
+.bar .fill{height:100%;border-radius:4px}
+.bar .v{font-variant-numeric:tabular-nums;font-weight:600}
+.list{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;padding-block:10px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .t{min-width:0}
+.row .t div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .t small{color:var(--muted);font-size:12px}
+.row .v{font-variant-numeric:tabular-nums;font-weight:600}
+.badge{font-size:11px;font-weight:600;color:var(--fixe);background:var(--fixe-soft);border-radius:999px;padding:2px 8px;margin-left:6px}
+.del{border:1px solid transparent;background:transparent;color:var(--muted);border-radius:8px;padding:6px 8px;font:500 13px var(--body);cursor:pointer;white-space:nowrap}
+.del.confirm{background:var(--danger-soft);color:var(--danger)}
+.empty{color:var(--muted);font-size:14px;margin:0}
+.status{text-align:center;color:var(--muted);font-size:13px;margin:0}
+.link{background:none;border:0;color:var(--muted);font:500 13px var(--body);text-decoration:underline;cursor:pointer;align-self:center}
+.login{min-height:80vh;justify-content:center}
+.login h1{font-family:var(--display);font-size:28px;margin:0}
+@media (prefers-reduced-motion:no-preference){.fill{transition:width .3s ease}}
+</style>
+</head>
+<body>
+
+<!-- Écran de connexion -->
+<div class="wrap login" id="loginView" hidden>
+  <h1>Budget Foyer</h1>
+  <form class="card" id="loginForm">
+    <input class="field" id="email" type="email" autocomplete="username" placeholder="E-mail" required>
+    <input class="field" id="pwd" type="password" autocomplete="current-password" placeholder="Mot de passe" required>
+    <button class="add" type="submit">Se connecter</button>
+    <p class="msg" id="loginMsg"></p>
+  </form>
+</div>
+
+<!-- Appli -->
+<div class="wrap" id="appView" hidden>
+  <header>
+    <button class="nav" id="prev" aria-label="Mois précédent">‹</button>
+    <h1 id="month">—</h1>
+    <button class="nav" id="next" aria-label="Mois suivant">›</button>
+  </header>
+
+  <section class="total" aria-live="polite">
+    <span class="lbl">Dépensé ce mois</span>
+    <span class="big" id="total">0 €</span>
+    <div class="split">
+      <span><span class="dot" style="background:var(--fixe)"></span>Chaque mois <b id="tFixe">0 €</b></span>
+      <span><span class="dot" style="background:var(--accent)"></span>Ponctuel <b id="tVar">0 €</b></span>
+    </div>
+  </section>
+
+  <form class="card" id="form" autocomplete="off">
+    <label class="amount" for="amt">
+      <input id="amt" inputmode="decimal" placeholder="0,00" aria-label="Montant">
+      <span>€</span>
+    </label>
+    <div class="chips" id="cats" role="group" aria-label="Catégorie"></div>
+    <div class="seg" role="group" aria-label="Fréquence">
+      <button type="button" data-v="var" aria-pressed="true">Une fois</button>
+      <button type="button" data-v="fixe" aria-pressed="false">Chaque mois</button>
+    </div>
+    <input class="field" id="name" placeholder="Nom (ex. Crédit maison, Netflix) — facultatif" hidden>
+    <button class="add" id="addBtn" type="submit" disabled>Ajouter</button>
+    <p class="msg" id="msg"></p>
+  </form>
+
+  <section class="card" id="repSec">
+    <h2>Par catégorie</h2>
+    <div class="bars" id="bars"></div>
+  </section>
+
+  <section class="card">
+    <h2>Détail du mois <small id="count"></small></h2>
+    <div class="list" id="list"></div>
+  </section>
+
+  <p class="status" id="status">Chargement…</p>
+  <button class="link" id="logout" type="button">Se déconnecter</button>
+</div>
+
+<p class="status" id="configMsg" hidden style="padding:40px 16px">Configuration manquante : ouvre le fichier <b>config.js</b> et colle la configuration Firebase (étape 4 du guide).</p>
+
+<script src="config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+
+// --- Démarrage Firebase ---
+const cfg=window.FIREBASE_CONFIG||{};
+if(!cfg.apiKey||cfg.apiKey.startsWith("COLLE")){ $("configMsg").hidden=false; throw new Error("config manquante"); }
+firebase.initializeApp(cfg);
+const auth=firebase.auth();
+const fs=firebase.firestore();
+fs.enablePersistence({synchronizeTabs:true}).catch(()=>{}); // fonctionne aussi hors connexion
+
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+
+// --- Connexion ---
+$("loginForm").onsubmit=async e=>{
+  e.preventDefault(); $("loginMsg").textContent="Connexion…"; $("loginMsg").className="msg";
+  try{ await auth.signInWithEmailAndPassword($("email").value.trim(),$("pwd").value); }
+  catch(err){ $("loginMsg").className="msg err";
+    $("loginMsg").textContent=/invalid|wrong|not-found|credential/.test(err.code||"")?"E-mail ou mot de passe incorrect.":"Connexion impossible : "+(err.message||err.code); }
+};
+$("logout").onclick=()=>auth.signOut();
+
+let unsub=[];
+auth.onAuthStateChanged(u=>{
+  unsub.forEach(f=>f()); unsub=[];
+  $("loginView").hidden=!!u; $("appView").hidden=!u;
+  if(u) start();
+});
+
+// --- Appli ---
+const CATS=[
+  ["Logement","--c1"],["Crédit","--c3"],["Abonnements","--c4"],["Courses","--c5"],
+  ["Voiture","--c2"],["Enfants","--c7"],["Santé","--c6"],["Loisirs","--c8"],["Divers","--c9"]];
+const COLOR=Object.fromEntries(CATS.map(([n,c])=>[n,`var(${c})`]));
+const fmt=c=>(c/100).toLocaleString("fr-FR",{minimumFractionDigits:c%100?2:0,maximumFractionDigits:2})+" €";
+const ym=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+const shift=(m,n)=>{const[y,mo]=m.split("-").map(Number);return ym(new Date(y,mo-1+n,1))};
+const localDate=d=>ym(d)+"-"+String(d.getDate()).padStart(2,"0");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let view=ym(new Date()), cat=null, freq="var", fixes=[], deps=[], confirmId=null;
+
+$("cats").innerHTML=CATS.map(([n])=>`<button type="button" class="chip" data-c="${n}" aria-pressed="false"><span class="dot" style="background:${COLOR[n]}"></span>${n}</button>`).join("");
+$("cats").onclick=e=>{const b=e.target.closest(".chip");if(!b)return;cat=b.dataset.c;
+  document.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===b));check()};
+document.querySelector(".seg").onclick=e=>{const b=e.target.closest("button");if(!b)return;freq=b.dataset.v;
+  document.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed",x===b));$("name").hidden=freq!=="fixe"};
+const cents=()=>{const v=parseFloat($("amt").value.replace(/\s/g,"").replace(",","."));return isFinite(v)&&v>0?Math.round(v*100):0};
+const check=()=>{$("addBtn").disabled=!(cents()&&cat)};
+$("amt").oninput=check;
+$("prev").onclick=()=>{view=shift(view,-1);confirmId=null;render()};
+$("next").onclick=()=>{view=shift(view,1);confirmId=null;render()};
+
+const activeFixes=()=>fixes.filter(f=>f.debut<=view&&(!f.fin||f.fin>=view));
+const monthDeps=()=>deps.filter(d=>d.mois===view).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+
+function render(){
+  const [y,m]=view.split("-").map(Number);
+  $("month").textContent=new Date(y,m-1,1).toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
+  const F=activeFixes(), D=monthDeps();
+  const tf=F.reduce((s,x)=>s+x.montant,0), tv=D.reduce((s,x)=>s+x.montant,0);
+  $("total").textContent=fmt(tf+tv); $("tFixe").textContent=fmt(tf); $("tVar").textContent=fmt(tv);
+
+  const by={};[...F,...D].forEach(x=>by[x.categorie]=(by[x.categorie]||0)+x.montant);
+  const rows=Object.entries(by).sort((a,b)=>b[1]-a[1]), max=rows[0]?.[1]||1;
+  $("repSec").hidden=!rows.length;
+  $("bars").innerHTML=rows.map(([c,v])=>`<div class="bar"><span><span class="dot" style="background:${COLOR[c]||"var(--c9)"}"></span>${esc(c)}</span><span class="v">${fmt(v)}</span><div class="track"><div class="fill" style="width:${Math.max(2,v/max*100)}%;background:${COLOR[c]||"var(--c9)"}"></div></div></div>`).join("");
+
+  const items=[...F.map(x=>({...x,k:"f"})),...D.map(x=>({...x,k:"d"}))];
+  $("count").textContent=items.length?items.length+" ligne"+(items.length>1?"s":""):"";
+  $("list").innerHTML=items.length?items.map(x=>{
+    const sub=x.k==="f"?"":(x.date?new Date(x.date+"T12:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short"}):"");
+    const key=x.k+":"+x.id, conf=confirmId===key;
+    return `<div class="row"><span class="dot" style="background:${COLOR[x.categorie]||"var(--c9)"};margin:0"></span>
+      <div class="t"><div>${esc(x.nom||x.categorie)}${x.k==="f"?'<span class="badge">chaque mois</span>':""}</div>${x.nom||sub?`<small>${x.nom?esc(x.categorie):""}${x.nom&&sub?" · ":""}${sub}</small>`:""}</div>
+      <span class="v">${fmt(x.montant)}</span>
+      <button class="del${conf?" confirm":""}" data-k="${key}" aria-label="Supprimer">${conf?(x.k==="f"?"Arrêter ?":"Supprimer ?"):"✕"}</button></div>`}).join("")
+    :`<p class="empty">Rien pour ce mois. Saisis un montant et une catégorie ci-dessus.</p>`;
+}
+
+$("list").onclick=async e=>{
+  const b=e.target.closest(".del");if(!b)return;const key=b.dataset.k;
+  if(confirmId!==key){confirmId=key;render();return}
+  confirmId=null;const[k,id]=key.split(":");
+  try{
+    if(k==="d") await fs.collection("depenses").doc(id).delete();
+    else{ // une charge fixe s'arrête à partir du mois affiché ; les mois passés restent intacts
+      const f=fixes.find(x=>x.id===id);
+      if(!f||f.debut>=view) await fs.collection("fixes").doc(id).delete();
+      else await fs.collection("fixes").doc(id).update({fin:shift(view,-1)});
+    }
+  }catch(err){say("Suppression impossible : "+(err.message||err.code),true)}
+};
+
+$("form").onsubmit=async e=>{
+  e.preventDefault();const c=cents();if(!c||!cat)return;
+  $("addBtn").disabled=true;
+  try{
+    if(freq==="fixe"){
+      const nom=$("name").value.trim();
+      fs.collection("fixes").add({montant:c,categorie:cat,nom:nom||null,debut:view,fin:null});
+      say(`${fmt(c)} ajouté chaque mois à partir de ce mois.`);
+    }else{
+      const now=new Date(), date=view===ym(now)?localDate(now):view+"-01";
+      fs.collection("depenses").add({montant:c,categorie:cat,mois:view,date});
+      say(`${fmt(c)} ajouté en ${cat}.`);
+    }
+    $("amt").value="";$("name").value="";
+  }catch(err){say("Enregistrement impossible : "+(err.message||err.code),true)}
+  check();
+};
+function say(t,err){$("msg").textContent=t;$("msg").className="msg"+(err?" err":"")}
+
+function start(){
+  render();
+  $("status").textContent="Chargement…";
+  let ready=0;const done=()=>{if(++ready===2)$("status").textContent=""};
+  const map=s=>s.docs.map(d=>({id:d.id,...d.data()}));
+  const fail=err=>{$("status").textContent=err.code==="permission-denied"
+    ?"Accès refusé : cette adresse e-mail n'est pas dans les règles Firestore (étape 3 du guide)."
+    :"Données indisponibles : "+(err.message||err.code)};
+  unsub.push(fs.collection("fixes").onSnapshot(s=>{fixes=map(s);render();done()},fail));
+  unsub.push(fs.collection("depenses").onSnapshot(s=>{deps=map(s);render();done()},fail));
+}
+</script>
+</body>
+</html>
