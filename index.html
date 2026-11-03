@@ -112,6 +112,16 @@ h2 small{font-family:var(--body);font-weight:500;color:var(--muted);font-size:14
 .del{border:1px solid transparent;background:transparent;color:var(--muted);border-radius:8px;padding:6px 8px;font:500 13px var(--body);cursor:pointer;white-space:nowrap}
 .del.confirm{background:var(--danger-soft);color:var(--danger)}
 .empty{color:var(--muted);font-size:14px;margin:0}
+.dayh{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding-top:14px}
+.dayh:first-child{padding-top:0}
+details.grp{border-top:1px solid var(--line);margin-top:10px}
+details.grp summary{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding-block:14px;cursor:pointer;font-weight:600;list-style:none}
+details.grp summary::-webkit-details-marker{display:none}
+details.grp summary::after{content:"›";color:var(--muted);transition:transform .2s;margin-left:6px}
+details.grp[open] summary::after{transform:rotate(90deg)}
+details.grp summary .sum{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--muted);font-weight:500}
+details.grp summary .sum.plus{color:var(--pos)}
+details.grp .row:first-of-type{border-top:0}
 .status{text-align:center;color:var(--muted);font-size:13px;margin:0}
 .link{background:none;border:0;color:var(--muted);font:500 13px var(--body);text-decoration:underline;cursor:pointer;align-self:center}
 .login{min-height:80vh;justify-content:center}
@@ -357,17 +367,33 @@ function render(){
     return `<div class="bar"><span><span class="dot" style="background:${COLOR[c]||"var(--c9)"}"></span>${esc(c)}</span><span class="v"${b&&r>=1?' style="color:var(--danger)"':""}>${fmt(v)}${b?` <small style="color:var(--muted);font-weight:500">/ ${fmt(b)}</small>`:""}</span><div class="track"><div class="fill" style="width:${Math.max(v?2:0,w)}%;background:${col}"></div></div></div>`}).join("")
     :`<p class="empty">Aucune dépense ce mois.</p>`;
 
-  const items=[...F.map(x=>({...x,k:"f"})),...D.map(x=>({...x,k:"d"}))].sort((a,b)=>isRev(b)-isRev(a));
-  $("count").textContent=items.length?items.length+" ligne"+(items.length>1?"s":""):"";
-  $("list").innerHTML=items.length?items.map(x=>{
+  // Détail du mois : dépenses récentes d'abord (par jour), puis charges fixes et revenus repliés
+  const all=[...F.map(x=>({...x,k:"f"})),...D.map(x=>({...x,k:"d"}))];
+  const recent=all.filter(x=>x.k==="d"&&!isRev(x)).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.t||0)-(a.t||0));
+  const fixed=all.filter(x=>x.k==="f"&&!isRev(x)).sort((a,b)=>b.montant-a.montant);
+  const revs=all.filter(isRev).sort((a,b)=>b.montant-a.montant);
+  const sumOf=a=>a.reduce((s,x)=>s+x.montant,0);
+  $("count").textContent=recent.length?recent.length+" dépense"+(recent.length>1?"s":""):"";
+  const todayS=localDate(new Date()), yest=localDate(new Date(Date.now()-864e5));
+  const dayLabel=d=>!d?"Sans date":d===todayS?"Aujourd'hui":d===yest?"Hier":new Date(d+"T12:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+  let html="", lastDay=null;
+  recent.forEach(x=>{ if(x.date!==lastDay){lastDay=x.date; html+=`<div class="dayh">${dayLabel(x.date)}</div>`} html+=rowHtml(x) });
+  if(!recent.length) html=`<p class="empty">Aucune dépense ponctuelle ce mois. Saisis un montant et une catégorie ci-dessus.</p>`;
+  const grp=(id,title,arr,plus)=>arr.length?`<details class="grp" data-g="${id}"${openGroups.has(id)?" open":""}><summary>${title} <small style="color:var(--muted);font-weight:500">(${arr.length})</small><span class="sum${plus?" plus":""}">${plus?"+":""}${fmt(sumOf(arr))}</span></summary>${arr.map(rowHtml).join("")}</details>`:"";
+  html+=grp("fixes","Charges fixes",fixed,false)+grp("revenus","Revenus",revs,true);
+  $("list").innerHTML=html;
+}
+function rowHtml(x){
+  {
     const sub=x.k==="f"?"":(x.date?new Date(x.date+"T12:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short"}):"");
     const key=x.k+":"+x.id, conf=confirmId===key;
     return `<div class="row" data-k="${key}"><span class="dot" style="background:${COLOR[x.categorie]||"var(--c9)"};margin:0"></span>
-      <div class="t"><div>${esc(x.nom||x.categorie)}${x.k==="f"?`<span class="badge${isRev(x)?" rev":""}">chaque mois</span>`:""}</div>${x.nom||sub?`<small>${x.nom?esc(x.categorie):""}${x.nom&&sub?" · ":""}${sub}</small>`:""}</div>
+      <div class="t"><div>${esc(x.nom||x.categorie)}</div>${(()=>{const parts=[x.nom?esc(x.categorie):"",x.k==="f"?"chaque mois":isRev(x)?sub:""].filter(Boolean);return parts.length?`<small>${parts.join(" · ")}</small>`:""})()}</div>
       <span class="v${isRev(x)?" plus":""}">${isRev(x)?"+":""}${fmt(x.montant)}</span>
-      <button class="del${conf?" confirm":""}" data-k="${key}" aria-label="Supprimer">${conf?(x.k==="f"?"Arrêter ?":"Supprimer ?"):"✕"}</button></div>`}).join("")
-    :`<p class="empty">Rien pour ce mois. Saisis un montant et une catégorie ci-dessus.</p>`;
+      <button class="del${conf?" confirm":""}" data-k="${key}" aria-label="Supprimer">${conf?(x.k==="f"?"Arrêter ?":"Supprimer ?"):"✕"}</button></div>`}
 }
+const openGroups=new Set();
+$("list").addEventListener("toggle",e=>{const g=e.target.dataset?.g;if(!g)return;e.target.open?openGroups.add(g):openGroups.delete(g)},true);
 
 $("list").onclick=async e=>{
   const b=e.target.closest(".del");
@@ -395,7 +421,7 @@ $("form").onsubmit=async e=>{
       say(`${type==="revenu"?"Revenu de ":""}${fmt(c)} ajouté chaque mois à partir de ce mois.`);
     }else{
       const now=new Date(), date=view===ym(now)?localDate(now):view+"-01";
-      fs.collection("depenses").add({type,montant:c,categorie:cat,nom:nom||null,mois:view,date});
+      fs.collection("depenses").add({type,montant:c,categorie:cat,nom:nom||null,mois:view,date,t:Date.now()});
       say(`${type==="revenu"?"+":""}${fmt(c)} ajouté en ${cat}${nom?" ("+nom+")":""}.`);
     }
     $("amt").value="";$("name").value="";
